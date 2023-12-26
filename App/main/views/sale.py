@@ -7,12 +7,8 @@ from ..serializers import SaleSerializer
 import datetime
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-
-
-class CustomException(Exception):
-    def __init__(self, msg, code):
-        self.msg = msg
-        self.code = code
+from ..Components.CustomError import CustomException 
+from ..Components.sale import deleteSales
 
 def get_sales(date_str, end_date_str, name):
 
@@ -207,23 +203,12 @@ def sale(request, id):
             return Response(newSale["error"], status=newSale["status"])
 
     elif request.method == 'DELETE':
-
-        if not request.user.is_authenticated:
-            return Response({"error": "You must be authenticated to access this route."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not request.user.is_staff:
-            return Response({"error": "You do not have permission to access this route."}, status=status.HTTP_401_UNAUTHORIZED)
-
         try:        
-            sale = models.Sale.objects.get(id=id)
-            item = models.Stock.objects.get(name=sale.name)
-
-            # Add's the item back to the stock
-            item.quantity = item.quantity + sale.quantity
-            item.quantity_sold = item.quantity_sold - sale.quantity
-            item.save()
-        
-            return Response({"success": True}, status=status.HTTP_204_NO_CONTENT)
+            sale = deleteSales(request, id)
+            return Response(sale.data, status=sale.status)
         except models.Sale.DoesNotExist:
             return Response({"error": f"Sale with ID `{id}` not found."}, status=status.HTTP_404_NOT_FOUND)
+        except CustomException as e:
+            return Response({"error": e}, status=e.code)
+        
             
