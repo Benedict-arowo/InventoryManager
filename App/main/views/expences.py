@@ -5,7 +5,7 @@ from .. import models
 from ..serializers import ExpencesSerializer
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-
+import datetime
 
 @swagger_auto_schema(
     method='GET',
@@ -42,7 +42,44 @@ from drf_yasg.utils import swagger_auto_schema
 @api_view(['GET', 'POST'])
 def expences(request):
     if request.method == 'GET':
-        getExpences = models.Expence.objects.all()
+        date_str = request.GET.get('date')
+        end_date_str = request.GET.get('end-date')
+        name = request.GET.get('name')
+
+        # A month
+        max_days = 30 
+
+        if not date_str:
+            date_str = datetime.date.today().strftime("%Y-%m-%d")
+            print(date_str)
+
+        if end_date_str:
+            try:
+                end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid end date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        if end_date_str and end_date < date:
+            return Response({"error": "End date must be greater than or equal to start date."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if (end_date - date).days > max_days:
+            return Response({"error": f"Difference between given dates can't be more than {max_days}."}, status=status.HTTP_400_BAD_REQUEST)
+
+        filters = {}
+        if not end_date_str:
+            filters['created_at__date'] = date
+        if end_date_str:
+            filters['created_at__date__range'] = [date, end_date]
+        if name:
+            filters['name__icontains'] = name
+
+        getExpences = models.Expence.objects.filter(**filters).order_by('created_at')
         serializer = ExpencesSerializer(getExpences, many=True)
         return Response({ "success": True, "data": serializer.data }, status=status.HTTP_200_OK)
     elif request.method == 'POST':
@@ -74,46 +111,32 @@ def expences(request):
             return Response({'success': True, 'data': serializer.data}, status=status.HTTP_201_CREATED)
         return Response({"error": serializer.errors }, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET', 'PATCH', 'DELETE'])
+
+@swagger_auto_schema(
+    method='GET',
+    responses={status.HTTP_200_OK: ExpencesSerializer(), status.HTTP_400_BAD_REQUEST: "Bad Request", status.HTTP_404_NOT_FOUND: "Not Found", status.HTTP_401_UNAUTHORIZED: "Unauthorized"},
+    error_responses={
+        status.HTTP_400_BAD_REQUEST: "Bad Request - Invalid query parameters provided or wrong date format.",
+        status.HTTP_401_UNAUTHORIZED: {"error": "You must be authenticated to access this route."},
+        status.HTTP_404_NOT_FOUND: {"error": f"Expence with ID `{id}` not found."},
+    },
+)
+@swagger_auto_schema(
+    method='DELETE',
+    responses={status.HTTP_204_NO_CONTENT: "No Content", status.HTTP_400_BAD_REQUEST: "Bad Request", status.HTTP_404_NOT_FOUND: "Not Found", status.HTTP_401_UNAUTHORIZED: "Unauthorized"},
+    error_responses={
+        status.HTTP_400_BAD_REQUEST: "Bad Request - Invalid query parameters provided or wrong date format.",
+        status.HTTP_401_UNAUTHORIZED: {"error": "You must be authenticated to access this route."},
+        status.HTTP_404_NOT_FOUND: {"error": "Expence with ID `id` not found."},
+    },
+)
+@api_view(['GET', 'DELETE'])
 def expence(request, id):
     if request.method == 'GET':
         try:
             expenceInstance = models.Expence.objects.get(id=id)
             serializer = ExpencesSerializer(expenceInstance)
             return Response({'success': True, 'data': serializer.data}, status=status.HTTP_200_OK)
-        except models.Expence.DoesNotExist:
-            return Response({"error": f"Expence with ID `{id}` not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    elif request.method == 'PATCH':
-        if not request.user.is_authenticated:
-            return Response({"error": "You must be authenticated to access this route."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not request.user.is_staff:
-            return Response({"error": "You do not have permission to access this route."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        name = request.data.get('name')
-        quantity = request.data.get('quantity')
-        price = request.data.get('price')
-        add_to_stock = request.data.get('add_to_stock')
-        try:
-            expenceInstance = models.Expence.objects.get(id=id)
-            if name:
-                expenceInstance.name = name
-
-            if add_to_stock and add_to_stock == False:
-                pass
-            elif add_to_stock and add_to_stock == True:
-                pass
-
-            if quantity:
-                expenceInstance.quantity = quantity
-
-            if price:
-                expenceInstance.price = price
-
-            expenceInstance.save()
-            serializer = ExpencesSerializer(expenceInstance)
-            return Response({ 'success' : True, "data": serializer.data}, status=status.HTTP_200_OK)
         except models.Expence.DoesNotExist:
             return Response({"error": f"Expence with ID `{id}` not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -126,12 +149,22 @@ def expence(request, id):
 
         try:        
             expenceInstance = models.Expence.objects.get(id=id)
-            inStock = models.Stock.objects.get(name=expenceInstance.name, price_per_unit=expenceInstance.price)
+            if expenceInstance.add_to_stock == True:
+                inStock = models.Stock.objects.get(name=expenceInstance.name, price_per_unit=expenceInstance.selling_price_per_unit)
+
+            # if expenceInstance.add_to_stock == True and not inStock:
+                # return Response({"error": f"Item is no longer in stock."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Add's the item back to the stock
-            if expenceInstance.inStock:
-                inStock.quantity = inStock.quantity + expenceInstance.quantity
-                inStock.save()        
+            if expenceInstance.add_to_stock == True and inStock:
+                if inStock.quantity - expenceInstance.quantity < 0:
+                    return Response({"error": f"Insufficient amount in stock."}, status=status.HTTP_400_BAD_REQUEST)
+                inStock.quantity = inStock.quantity - expenceInstance.quantity
+                inStock.save()      
+
+            expenceInstance.delete()
             return Response({"success": True}, status=status.HTTP_204_NO_CONTENT)
-        except models.Sale.DoesNotExist:
+        except models.Expence.DoesNotExist:
             return Response({"error": f"Expence with ID `{id}` not found."}, status=status.HTTP_404_NOT_FOUND)
+        except models.Stock.DoesNotExist:
+            return Response({"error": f"Item is no longer in stock."}, status=status.HTTP_400_BAD_REQUEST)
