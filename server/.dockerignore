@@ -1,0 +1,24 @@
+# Ignore virtual environment files and directories
+venv/
+
+# Ignore database files
+db.sqlite3
+
+# Ignore Docker-related files
+Dockerfile
+.dockerignore
+
+# Ignore development and editor-specific files
+*.pyc
+*.pyo
+__pycache__
+.vscode/
+.idea/
+
+# Ignore local settings
+local_settings.py
+
+# Ignore test files
+tests/
+
+# Ignore any other files or directories you want to exclude

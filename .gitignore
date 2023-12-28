@@ -1,4 +1,2 @@
-/Include
-/Lib
-/Scripts
-/App/db.sqlite3
+/server/venv
+/server/db.sqlite3
