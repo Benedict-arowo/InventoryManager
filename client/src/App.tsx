@@ -12,7 +12,7 @@ import {
 	GridToolbar,
 } from "@mui/x-data-grid";
 import { v4 as uuidv4 } from "uuid";
-import { Autocomplete, TextField } from "@mui/material";
+import { Autocomplete, Button, TextField } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
@@ -354,7 +354,7 @@ const App = () => {
 		if (namesInLocalStorage) {
 			setLocalStorageState((prev) => {
 				return {
-					names: [prev.names, ...JSON.parse(namesInLocalStorage)],
+					names: [...prev.names, ...JSON.parse(namesInLocalStorage)],
 					categories: prev.categories,
 				};
 			});
@@ -363,7 +363,7 @@ const App = () => {
 			setLocalStorageState((prev) => {
 				return {
 					categories: [
-						prev.categories,
+						...prev.categories,
 						...JSON.parse(categoriesInLocalStorage),
 					],
 					names: prev.names,
@@ -374,7 +374,7 @@ const App = () => {
 
 	return (
 		<main className="flex flex-row gap-0 max-h-screen overflow-y-hidden">
-			<section className="w-[350px] px-2 bg-blue-400 h-screen flex flex-col gap-1 py-2">
+			<section className="min-w-[350px] px-2 bg-blue-400 h-screen flex flex-col gap-1 py-2">
 				<Autocomplete
 					freeSolo
 					id="item_name_search"
@@ -438,19 +438,6 @@ const App = () => {
 					}}
 				/>
 
-				{/* <input
-					type="number"
-					name="amount_bought"
-					placeholder="amount_bought"
-					id=""
-					onChange={(e) =>
-						setControllerInputs((prev) => ({
-							...prev,
-							amount_bought: Number(e.target.value),
-						}))
-					}
-					value={controlledInputs.amount_bought}
-				/> */}
 				{/* TODO: Get data from both localstorage and state */}
 				<Autocomplete
 					freeSolo
@@ -477,7 +464,9 @@ const App = () => {
 					}}
 					inputValue={controlledInputs.category}
 				/>
-				<button
+
+				<Button
+					variant="contained"
 					onClick={() =>
 						addNewItem({
 							name: controlledInputs.name,
@@ -487,8 +476,12 @@ const App = () => {
 						})
 					}>
 					Add
-				</button>
-				<button onClick={() => mergeDuplicates(items)}>Merge</button>
+				</Button>
+				<Button
+					variant="outlined"
+					onClick={() => mergeDuplicates(items)}>
+					Merge
+				</Button>
 			</section>
 			<aside className="flex-1 bg-white h-screen flex justify-center">
 				<div className="h-full w-full">
