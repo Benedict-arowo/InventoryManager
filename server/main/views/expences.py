@@ -174,7 +174,7 @@ def expences(request):
                         price_per_unit=selling_price_per_unit,
                     )
 
-            serializer.save(price_per_unit=price / quantity)
+            serializer.save(price_per_unit=int(price) / int(quantity))
             return Response(
                 {"success": True, "data": serializer.data},
                 status=status.HTTP_201_CREATED,
