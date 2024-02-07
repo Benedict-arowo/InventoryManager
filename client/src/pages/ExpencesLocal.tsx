@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
 	DataGrid,
 	GridActionsCellItem,
@@ -28,8 +28,8 @@ type ItemInState = {
 
 type Item = {
 	name: string;
-	price_per_unit: number;
-	amount_bought: number;
+	price_per_unit: string;
+	amount_bought: string;
 	category: string;
 };
 
@@ -38,15 +38,17 @@ type localStorageStateProps = {
 	categories: string[];
 };
 
-const Expences = () => {
+const ExpencesLocal = () => {
 	const [items, setItems] = useState<ItemInState[]>([]);
 	const [rowModesModel, setRowModesModel] = React.useState<GridRowModesModel>(
 		{}
 	);
+	const inputElement = useRef();
+	const [total, setTotal] = useState(0);
 	const [controlledInputs, setControllerInputs] = useState({
 		name: "",
-		price_per_unit: 0,
-		amount_bought: 0,
+		price_per_unit: "",
+		amount_bought: "",
 		category: "",
 	});
 	const [localStorageState, setLocalStorageState] =
@@ -56,12 +58,50 @@ const Expences = () => {
 		});
 
 	const DEFAULT_CATEGORY = "MISC";
+	const [priceList, setPriceList] = useState<string[]>([]);
+
+	const updatePriceList = (itemName: string) => {
+		const priceList: string[] = [];
+		items.forEach((item) =>
+			item.name === itemName
+				? priceList.push(item.price_per_unit.toString())
+				: undefined
+		);
+
+		setPriceList(() => priceList);
+	};
+
+	const getTotal = (item: ItemInState[]) => {
+		let _total = 0;
+		item.forEach((item) => {
+			_total += item.total;
+		});
+		setTotal(() => _total);
+	};
 
 	const addNewItem = (item: Item) => {
 		if (!item.name) throw new Error("Missing item name");
-		if (!item.amount_bought) throw new Error("Missing item amount_bought");
-		if (!item.price_per_unit)
-			throw new Error("Missing item amount_per_unit");
+
+		if (item.amount_bought) {
+			if (isNaN(Number(item.amount_bought)))
+				throw new Error("Invalid item bought amount.");
+		} else throw new Error("Missing item amount_bought");
+
+		let item_price_per_unit;
+		console.log(item.price_per_unit.length);
+		if (item.price_per_unit.length === 0) {
+			const findItem = items.find(
+				(inStateItem) =>
+					inStateItem.name.toUpperCase() === item.name.toUpperCase()
+			);
+
+			if (findItem) item_price_per_unit = findItem.price_per_unit;
+			else throw new Error("Missing item amount_per_unit");
+		} else {
+			if (isNaN(Number(item.price_per_unit)))
+				throw new Error("Invalid price per unit.");
+			item_price_per_unit = Number(item.price_per_unit);
+		}
 
 		let item_category = "";
 		if (item.category.length === 0) {
@@ -82,10 +122,12 @@ const Expences = () => {
 			item_category = item.category.toUpperCase();
 		}
 
-		const newItem = {
+		const newItem: ItemInState = {
 			id: uuidv4(),
 			...item,
-			total: item.amount_bought * item.price_per_unit,
+			amount_bought: Number(item.amount_bought),
+			price_per_unit: Number(item_price_per_unit),
+			total: Number(item.amount_bought) * Number(item_price_per_unit),
 			category: item_category,
 		};
 
@@ -93,13 +135,15 @@ const Expences = () => {
 
 		updateLocalStorage(newItem);
 		resetInputs();
+		console.log(inputElement);
+		if (inputElement.current) inputElement.current.focus();
 	};
 
 	const resetInputs = () => {
 		setControllerInputs(() => ({
 			name: "",
-			price_per_unit: 0,
-			amount_bought: 0,
+			price_per_unit: "",
+			amount_bought: "",
 			category: "",
 		}));
 	};
@@ -262,6 +306,11 @@ const Expences = () => {
 		},
 	];
 
+	useEffect(() => {
+		getTotal(items);
+		console.log("running");
+	}, [items]);
+
 	const mergeDuplicates = (items: ItemInState[]) => {
 		const updatedItems: ItemInState[] = [];
 		// Loops through each item, and check if the item already exists in updatedItems array.
@@ -298,7 +347,7 @@ const Expences = () => {
 		return 0;
 	};
 
-	const updateLocalStorage = (item: Item) => {
+	const updateLocalStorage = (item: ItemInState) => {
 		const localStorageNames = localStorage.getItem("item-names");
 		const localStorageCategories = localStorage.getItem("item-categories");
 
@@ -372,16 +421,26 @@ const Expences = () => {
 		}
 	}, []);
 
+	const clearItems = () => {
+		const ask = prompt("Are you sure you want to clear? (yes)");
+		if (ask?.toLowerCase() === "yes") {
+			localStorage.removeItem("items");
+			setItems(() => []);
+		}
+	};
+
 	return (
 		<main className="flex flex-row gap-0 max-h-screen overflow-y-hidden">
 			<section className="min-w-[350px] px-2 bg-blue-400 h-screen flex flex-col gap-1 py-2">
+				<p>Total {total}</p>
 				<Autocomplete
 					freeSolo
 					id="item_name_search"
 					disableClearable
+					ref={inputElement}
 					// TODO: Use data from localStorage and state
 					options={getUniqueValues(
-						items.map((item) => item.name),
+						items.map((item) => item.name.toLowerCase()),
 						localStorageState.names
 					)}
 					renderInput={(params) => (
@@ -395,6 +454,7 @@ const Expences = () => {
 						/>
 					)}
 					onInputChange={(_event, newInputValue) => {
+						updatePriceList(newInputValue);
 						setControllerInputs((prev) => ({
 							...prev,
 							name: newInputValue,
@@ -402,28 +462,31 @@ const Expences = () => {
 					}}
 					inputValue={controlledInputs.name}
 				/>
-				{/* <input
-					type="number"
-					name="price per unit"
-					placeholder="Price per unit"
-					id=""
-					onChange={(e) =>
+
+				<Autocomplete
+					freeSolo
+					id="item_price_per_unit"
+					disableClearable
+					// TODO: Use data from localStorage and state
+					options={getUniqueValues(priceList)}
+					openOnFocus={true}
+					renderInput={(params) => (
+						<TextField
+							{...params}
+							label="Price per unit"
+							InputProps={{
+								...params.InputProps,
+								type: "search",
+							}}
+						/>
+					)}
+					onInputChange={(_event, newInputValue) => {
 						setControllerInputs((prev) => ({
 							...prev,
-							price_per_unit: Number(e.target.value),
-						}))
-					}
-				/> */}
-				<TextField
-					label="Price per unit"
-					variant="outlined"
-					value={controlledInputs.price_per_unit}
-					onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-						setControllerInputs((prev) => ({
-							...prev,
-							price_per_unit: Number(e.target.value),
+							price_per_unit: newInputValue,
 						}));
 					}}
+					inputValue={controlledInputs.price_per_unit}
 				/>
 
 				<TextField
@@ -433,7 +496,7 @@ const Expences = () => {
 					onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
 						setControllerInputs((prev) => ({
 							...prev,
-							amount_bought: Number(e.target.value),
+							amount_bought: e.target.value,
 						}));
 					}}
 				/>
@@ -482,6 +545,9 @@ const Expences = () => {
 					onClick={() => mergeDuplicates(items)}>
 					Merge
 				</Button>
+				<Button variant="outlined" onClick={() => clearItems()}>
+					Clear
+				</Button>
 			</section>
 			<aside className="flex-1 bg-white h-screen flex justify-center">
 				<div className="h-full w-full">
@@ -509,4 +575,4 @@ const Expences = () => {
 	);
 };
 
-export default Expences;
+export default ExpencesLocal;

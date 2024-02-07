@@ -1,14 +1,14 @@
 const Home = () => {
 	return (
-		<main className="flex flex-row items-center justify-center h-screen gap-6">
+		<main className="w-full">
 			<div>
 				<h4>
-					<a href="/sales">Sales</a>
+					<a href="/sales-local">Sales</a>
 				</h4>
 			</div>
 			<div>
 				<h4>
-					<a href="/expences">Expences</a>
+					<a href="/expences-local">Expences</a>
 				</h4>
 			</div>
 		</main>
