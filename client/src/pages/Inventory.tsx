@@ -10,7 +10,7 @@ import {
 	Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
 
 const Inventory = () => {
 	const [inventoryItems, setInventoryItems] = useState<InventoryItems[]>([]);
@@ -32,7 +32,7 @@ const Inventory = () => {
 	}, []);
 
 	const columns: GridColDef[] = [
-		{ field: "id", headerName: "ID", width: 90 },
+		// { field: "id", headerName: "ID", width: 90 },
 		{
 			field: "name",
 			headerName: "Item Name",
@@ -98,6 +98,7 @@ const Inventory = () => {
 								.toLowerCase()
 								.endsWith(search.toLowerCase())
 					)}
+					density="compact"
 					columns={columns}
 					initialState={{
 						pagination: {
@@ -109,6 +110,7 @@ const Inventory = () => {
 					pageSizeOptions={[5, 10, 15, 20, 30, 40, 50]}
 					// checkboxSelection
 					// disableRowSelectionOnClick
+					slots={{ toolbar: GridToolbar }}
 				/>
 			</div>
 

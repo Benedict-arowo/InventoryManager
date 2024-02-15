@@ -16,6 +16,7 @@ import { Autocomplete, Button, TextField } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
+import { ConnectingAirportsOutlined } from "@mui/icons-material";
 
 type ItemInState = {
 	id: string;
@@ -212,7 +213,10 @@ const ExpencesLocal = () => {
 
 	const getUniqueValues = (...args: Array<string>) => {
 		// Returns a list of unique values
-		const newArray = new Set(args.flat());
+		const newArray = new Set(
+			args.flat().map((value) => value.toLowerCase())
+		);
+		console.log(newArray);
 		return Array.from(newArray);
 	};
 
