@@ -57,4 +57,11 @@ class Stock(TimeStampMixin):
     def __str__(self):
         return f"{self.name} @ {self.price_per_unit} - {self.quantity} left"
 
+
+class Category(TimeStampMixin):
+    name = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return f"{self.name}"
+
     # TODO: Expiry dates fields

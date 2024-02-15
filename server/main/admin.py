@@ -6,3 +6,4 @@ from . import models
 admin.site.register(models.Sale)
 admin.site.register(models.Stock)
 admin.site.register(models.Expence)
+admin.site.register(models.Category)
