@@ -56,6 +56,7 @@ def create_sale(request):
     name = request["name"]
     quantity = request["quantity"]
     price = request["price"]
+    amount_paid = request["amount_paid"]
 
     if not name:
         raise CustomException("name must be provided.", status.HTTP_400_BAD_REQUEST)
@@ -63,6 +64,10 @@ def create_sale(request):
         raise CustomException("quantity must be provided.", status.HTTP_400_BAD_REQUEST)
     if not price:
         raise CustomException("price must be provided.", status.HTTP_400_BAD_REQUEST)
+    if not amount_paid:
+        raise CustomException(
+            "amount_paid must be provided.", status.HTTP_400_BAD_REQUEST
+        )
 
     try:
         # There could be more than one item, having different prices hence why we need to make sure we only have one item.
@@ -94,9 +99,20 @@ def create_sale(request):
         raise models.Stock.DoesNotExist("Item does not exist")
 
     serializer = SaleSerializer(data=request)
+
+    # status & amount_paid
+
+    itemTotal = price * quantity
+    if amount_paid >= itemTotal:
+        itemStatus = "paid"
+    else:
+        itemStatus = "pending"
+
     if serializer.is_valid():
         # Saving the new sale.
-        serializer.save(total=price * quantity, item=item)
+        serializer.save(
+            total=itemTotal, item=item, status=itemStatus, amount_paid=amount_paid
+        )
         # Updating the stock
         item.quantity_sold = item.quantity_sold + quantity
         item.quantity = item.quantity - quantity
@@ -237,6 +253,7 @@ def sales(request):
                 "name": request.data.get("name"),
                 "quantity": request.data.get("quantity"),
                 "price": request.data.get("price"),
+                "amount_paid": request.data.get("amount_paid"),
             }
             newSale = create_sale(saleData)
             return Response(newSale["data"], status=newSale["status"])

@@ -1,3 +1,4 @@
+from enum import Enum
 from django.db import models
 import uuid
 from django.utils import timezone
@@ -12,21 +13,32 @@ class TimeStampMixin(models.Model):
         abstract = True
 
 
+class StatusEnum(Enum):
+    PENDING = "Pending"
+    PAID = "Paid"
+
+
 class Sale(TimeStampMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     item = models.ForeignKey(
         "Stock", related_name="sale_stock", on_delete=models.SET_NULL, null=True
     )
     price = models.IntegerField(default=0)
     quantity = models.IntegerField(default=1)
+    amount_paid = models.IntegerField(default=0)
+    status = models.CharField(
+        max_length=10,
+        choices=[(status.name, status.value) for status in StatusEnum],
+        default=StatusEnum.PENDING.value,
+    )
     total = models.IntegerField(default=0, editable=False)
 
     def __str__(self):
         formatted_created_at = timezone.localtime(self.created_at).strftime(
             "%a %b %d %H:%M:%S %Y"
         )
-        return f"{self.name} - {self.total} @ {formatted_created_at}"
+        return f"{self.name} - {self.total} @ {formatted_created_at} - {self.status}"
 
 
 class Expence(TimeStampMixin):
@@ -46,6 +58,7 @@ class Expence(TimeStampMixin):
 class Stock(TimeStampMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4(), editable=False)
     name = models.CharField(max_length=255)
+    category = models.ForeignKey("Category", null=True, on_delete=models.SET_NULL)
     quantity = models.IntegerField(default=0)
     price_per_unit = models.IntegerField(default=0)
     quantity_sold = models.IntegerField(default=0)
