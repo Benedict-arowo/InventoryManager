@@ -2,6 +2,7 @@ from enum import Enum
 from django.db import models
 import uuid
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 
 # Create your models here.
@@ -16,11 +17,17 @@ class TimeStampMixin(models.Model):
 class StatusEnum(Enum):
     PENDING = "Pending"
     PAID = "Paid"
+    DEBT = "Debt"
+
+
+class PaymentMethodEnum(Enum):
+    CASH = "Cash"
+    TRANSFER = "Transfer"
+    CARD = "Card"
 
 
 class Sale(TimeStampMixin):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
     item = models.ForeignKey(
         "Stock", related_name="sale_stock", on_delete=models.SET_NULL, null=True
     )
@@ -32,13 +39,24 @@ class Sale(TimeStampMixin):
         choices=[(status.name, status.value) for status in StatusEnum],
         default=StatusEnum.PENDING.value,
     )
+    payment_method = models.CharField(
+        max_length=10,
+        choices=[(method.name, method.value) for method in PaymentMethodEnum],
+        null=True,
+    )
     total = models.IntegerField(default=0, editable=False)
+    sold_by = models.ForeignKey(
+        User, related_name="sold_by", on_delete=models.SET_NULL, null=True
+    )
+    change = models.IntegerField(default=0, editable=False)
 
     def __str__(self):
         formatted_created_at = timezone.localtime(self.created_at).strftime(
             "%a %b %d %H:%M:%S %Y"
         )
-        return f"{self.name} - {self.total} @ {formatted_created_at} - {self.status}"
+        return (
+            f"{self.item.name} - {self.total} @ {formatted_created_at} - {self.status}"
+        )
 
 
 class Expence(TimeStampMixin):
@@ -63,6 +81,9 @@ class Stock(TimeStampMixin):
     price_per_unit = models.IntegerField(default=0)
     quantity_sold = models.IntegerField(default=0)
     low_stock_threshold = models.IntegerField(default=1)
+    use_quantity = models.BooleanField(default=False)
+    use_amount = models.BooleanField(default=False)
+    is_service = models.BooleanField(default=False)
 
     class Meta:
         unique_together = [["name", "price_per_unit"]]
