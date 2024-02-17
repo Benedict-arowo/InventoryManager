@@ -10,11 +10,12 @@ from drf_yasg.utils import swagger_auto_schema
 from ..Components.CustomError import CustomException
 from ..Components.sale.deleteSales import deleteSales
 
+PAYMENT_METHOD_LIST = ["CASH", "CARD", "TRANSFER"]
 
-def get_sales(date_str, end_date_str, name):
+
+def get_sales(date_str, end_date_str):
     if not date_str:
         date_str = datetime.date.today().strftime("%Y-%m-%d")
-        print(date_str)
     if end_date_str:
         try:
             end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
@@ -43,13 +44,17 @@ def get_sales(date_str, end_date_str, name):
         filters["created_at__date"] = date
     if end_date_str:
         filters["created_at__date__range"] = [date, end_date]
-    if name:
-        filters["name__icontains"] = name
+    # if name:
+    #     filters["name__icontains"] = name
 
     # Filter sales based on the provided date
     sales = models.Sale.objects.filter(**filters).order_by("created_at")
+
     serializer = SaleSerializer(sales, many=True)
-    return {"data": serializer.data, "status": status.HTTP_200_OK}
+    return {
+        "data": {"success": True, "data": serializer.data},
+        "status": status.HTTP_200_OK,
+    }
 
 
 def create_sale(request):
@@ -57,6 +62,8 @@ def create_sale(request):
     quantity = request["quantity"]
     price = request["price"]
     amount_paid = request["amount_paid"]
+    payment_method = request["payment_method"]
+    user = request["user"]
 
     if not name:
         raise CustomException("name must be provided.", status.HTTP_400_BAD_REQUEST)
@@ -64,10 +71,17 @@ def create_sale(request):
         raise CustomException("quantity must be provided.", status.HTTP_400_BAD_REQUEST)
     if not price:
         raise CustomException("price must be provided.", status.HTTP_400_BAD_REQUEST)
-    if not amount_paid:
+    if amount_paid != 0 and not amount_paid:
         raise CustomException(
             "amount_paid must be provided.", status.HTTP_400_BAD_REQUEST
         )
+    if payment_method and not payment_method.upper() in PAYMENT_METHOD_LIST:
+        raise CustomException(
+            "valid payment_method must be provided.", status.HTTP_400_BAD_REQUEST
+        )
+
+    # To make it case insensitive
+    name = name.lower()
 
     try:
         # There could be more than one item, having different prices hence why we need to make sure we only have one item.
@@ -83,46 +97,87 @@ def create_sale(request):
                     "price must be provided for this sale.", status.HTTP_400_BAD_REQUEST
                 )
             item = get_object_or_404(models.Stock, name=name, price_per_unit=price)
-            # TODO: Select the item that best matches the price given.
         else:
             item = item[0]
 
-        if item.quantity == 0:
-            raise CustomException(
-                "This item is currently out of stock.", status.HTTP_400_BAD_REQUEST
-            )
-        if item.quantity < quantity:
-            raise CustomException("Quantity is too high.", status.HTTP_400_BAD_REQUEST)
-        if item.price_per_unit > (price / quantity):
-            raise CustomException("Invalid item price.", status.HTTP_400_BAD_REQUEST)
+        print(item.price_per_unit)
+        print(price / quantity)
+        # If item is not a serivce, that's means they're buying an actual item that we have in stock hence why we make sure we have the item in stock.
+        if not item.is_service:
+            if item.quantity == 0:
+                raise CustomException(
+                    "This item is currently out of stock.", status.HTTP_400_BAD_REQUEST
+                )
+            if item.quantity < quantity:
+                raise CustomException(
+                    "Quantity is too high.", status.HTTP_400_BAD_REQUEST
+                )
+            if item.price_per_unit > price:
+                raise CustomException(
+                    "Invalid item price.", status.HTTP_400_BAD_REQUEST
+                )
+            # TODO: Check item's stock quantity
     except models.Stock.DoesNotExist:
         raise models.Stock.DoesNotExist("Item does not exist")
 
-    serializer = SaleSerializer(data=request)
-
     # status & amount_paid
 
-    itemTotal = price * quantity
-    if amount_paid >= itemTotal:
+    item_total = price * quantity
+    # If the amount_paid is greater than the item total, a change must be given back, it calculates that and saves the amount.
+    change = amount_paid - item_total
+
+    # Checks if the item is fully paid, a debt, or pending.
+    if amount_paid >= item_total:
         itemStatus = "paid"
+    elif amount_paid == 0:
+        itemStatus = "debt"
     else:
         itemStatus = "pending"
+
+    if amount_paid and not payment_method:
+        raise CustomException(
+            "payment_method must be provided.", status.HTTP_400_BAD_REQUEST
+        )
+
+    if payment_method:
+        payment_method = payment_method.upper()
+    else:
+        payment_method = "NULL"
+
+    # sold_by & payment method
+
+    serializer = SaleSerializer(
+        data={
+            "quantity": request["quantity"],
+            "price": request["price"],
+            "amount_paid": request["amount_paid"],
+            "user": request["user"],
+        }
+    )
 
     if serializer.is_valid():
         # Saving the new sale.
         serializer.save(
-            total=itemTotal, item=item, status=itemStatus, amount_paid=amount_paid
+            total=item_total,
+            item=item,
+            status=itemStatus,
+            amount_paid=amount_paid,
+            payment_method=payment_method,
+            sold_by=user,
+            change=change,
         )
-        # Updating the stock
-        item.quantity_sold = item.quantity_sold + quantity
-        item.quantity = item.quantity - quantity
-        item.save()
+
+        # Updating the stock only if the item is not a service.
+        if not item.is_service:
+            item.quantity_sold = item.quantity_sold + quantity
+            item.quantity = item.quantity - quantity
+            item.save()
+
         return {
             "data": {"success": True, "data": serializer.data},
             "status": status.HTTP_201_CREATED,
         }
     raise Exception(serializer.errors, status.HTTP_500_INTERNAL_SERVER_ERROR)
-    # return {"error": serializer.errors, status: status.HTTP_400_BAD_REQUEST }
 
 
 def edit_sale(request, id):
@@ -233,7 +288,7 @@ def sales(request):
         end_date_str = request.GET.get("end-date")
         name = request.GET.get("name")
 
-        getSale = get_sales(date_str=date_str, end_date_str=end_date_str, name=name)
+        getSale = get_sales(date_str=date_str, end_date_str=end_date_str)
         return Response(getSale["data"], status=getSale["status"])
     elif request.method == "POST":
         if not request.user.is_authenticated:
@@ -254,6 +309,8 @@ def sales(request):
                 "quantity": request.data.get("quantity"),
                 "price": request.data.get("price"),
                 "amount_paid": request.data.get("amount_paid"),
+                "user": request.user,
+                "payment_method": request.data.get("payment_method"),
             }
             newSale = create_sale(saleData)
             return Response(newSale["data"], status=newSale["status"])
