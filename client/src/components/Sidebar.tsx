@@ -2,7 +2,7 @@ const Sidebar = () => {
 	return (
 		<aside className="min-w-[250px] max-w-[250px] h-screen bg-neutral-50 relative">
 			<header className="w-full bg-slate-100 text-white py-3">
-				<h1 className="text-center font-medium text-zinc-700">
+				<h1 className="text-center font-medium text-sky-700">
 					Inventory Management
 				</h1>
 			</header>
@@ -12,7 +12,7 @@ const Sidebar = () => {
 					<li>
 						<a
 							href="./"
-							className="flex before:content-[' '] relative before:bg-slate-600 before:absolute before:top-0 before:left-0 before:bottom-0 before:w-1 before:content flex-row gap-4 bg-slate-200 px-2 py-2">
+							className="flex before:content-[' '] relative before:bg-sky-600 before:absolute before:top-0 before:left-0 before:bottom-0 before:w-[2px] before:content flex-row gap-4 bg-slate-200 text-sky-500 px-2 py-2">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"

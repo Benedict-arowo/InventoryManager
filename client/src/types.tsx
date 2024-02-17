@@ -7,4 +7,5 @@ export type InventoryItems = {
 	price_per_unit: number;
 	quantity_sold: number;
 	low_stock_threshold: number;
+	is_service: boolean;
 };
