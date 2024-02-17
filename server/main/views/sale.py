@@ -100,8 +100,6 @@ def create_sale(request):
         else:
             item = item[0]
 
-        print(item.price_per_unit)
-        print(price / quantity)
         # If item is not a serivce, that's means they're buying an actual item that we have in stock hence why we make sure we have the item in stock.
         if not item.is_service:
             if item.quantity == 0:
