@@ -364,7 +364,12 @@ const Sales = () => {
             <Column sortable field="quantity" header="Quantity"></Column>
             {/* <Column field="price" header="Price"></Column> */}
             <Column sortable field="amount_paid" header="Amount Paid"></Column>
-            <Column sortable body={totalBodyTemplate} header="Total"></Column>
+            <Column
+              sortable
+              body={totalBodyTemplate}
+              field="total"
+              header="Total"
+            ></Column>
             <Column
               body={statusBodyTemplate}
               sortable
