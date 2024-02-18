@@ -12,3 +12,7 @@
   @tailwind components;
   @tailwind utilities;
 }
+
+input[aria-describedby="item-name"] {
+  @apply w-full !important;
+}
