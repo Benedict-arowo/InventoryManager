@@ -2,10 +2,10 @@ import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
 import { useState } from "react";
-import { SERVER_URL } from "../utils";
 import { useNavigate } from "react-router-dom";
 import { Message } from "primereact/message";
 import { ProgressSpinner } from "primereact/progressspinner";
+import UseFetch from "../UseFetch";
 
 const Login = () => {
   const [details, setDetails] = useState({
@@ -16,36 +16,33 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const Navigate = useNavigate();
-  const loginUser = () => {
+  const loginUser = async () => {
     if (!details.username) return setErr("Username must be provided");
     if (!details.password) return setErr("Please enter a password");
 
     setErr(null);
     setIsLoading(true);
 
-    fetch(`${SERVER_URL}/api-auth/token/`, {
-      body: JSON.stringify(details),
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const { data, response } = await UseFetch({
+      url: "api-auth/token/",
+      options: {
+        method: "POST",
+        useServerUrl: true,
+        body: details,
+        useAuth: false,
+        returnResponse: true,
       },
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Error while trying to log user in.");
-        return response.json();
-      })
-      .then((data) => {
-        localStorage.setItem("access-token", JSON.stringify(data.access));
-        localStorage.setItem("refresh-token", JSON.stringify(data.refresh));
-        Navigate("/dashboard");
-      })
-      .catch((err) => {
-        console.log(err);
-        return setErr(err.message);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    });
+
+    if (response && !response.ok) {
+      setIsLoading(false);
+      return setErr(data ? data.error : "Error communicating with server.");
+    }
+
+    setIsLoading(false);
+    localStorage.setItem("access-token", JSON.stringify(data.access));
+    localStorage.setItem("refresh-token", JSON.stringify(data.refresh));
+    Navigate("/dashboard");
   };
 
   return (
