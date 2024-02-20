@@ -10,14 +10,15 @@ import Login from "./pages/Login";
 const App = () => {
   return (
     <div className="flex flex-row max-h-screen h-full w-full overflow-hidden">
-      <Sidebar />
       <Routes>
-        <Route element={<Home />} path="/" />
-        <Route element={<ExpencesLocal />} path="/expences-local" />
-        <Route element={<SalesLocal />} path="/sales-local" />
-        <Route element={<Inventory />} path="/inventory" />
-        <Route element={<Sales />} path="/sales" />
         <Route element={<Login />} path="/login" />
+        <Route path="/" element={<Sidebar />}>
+          <Route element={<Home />} path="/dashboard" />
+          <Route element={<ExpencesLocal />} path="/expences-local" />
+          <Route element={<SalesLocal />} path="/sales-local" />
+          <Route element={<Inventory />} path="/inventory" />
+          <Route element={<Sales />} path="/sales" />
+        </Route>
       </Routes>
     </div>
   );
