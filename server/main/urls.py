@@ -4,7 +4,8 @@ from .views import sale, stock, expences
 urlpatterns = [
     path("sales/", sale.sales, name="getSales"),
     path("sale/<int:id>", sale.sale, name="sale"),
-    path("stock", stock.stock, name="stock"),
+    path("stock", stock.stock, name="getStock"),
+    path("stock/<uuid:id>", stock.getItem, name="stock"),
     path("expences", expences.expences, name="expences"),
     path("expence/<uuid:id>", expences.expence, name="expence"),
 ]
