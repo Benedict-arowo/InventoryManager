@@ -54,9 +54,10 @@ class Sale(TimeStampMixin):
         formatted_created_at = timezone.localtime(self.created_at).strftime(
             "%a %b %d %H:%M:%S %Y"
         )
-        return (
-            f"{self.item.name} - {self.total} @ {formatted_created_at} - {self.status}"
-        )
+        if self.item:
+            return f"{self.item.name} - {self.total} @ {formatted_created_at} - {self.status}"
+        else:
+            return f"{self.total} @ {formatted_created_at} - {self.status}"
 
 
 class Expence(TimeStampMixin):
@@ -74,7 +75,7 @@ class Expence(TimeStampMixin):
 
 
 class Stock(TimeStampMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4(), editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     category = models.ForeignKey("Category", null=True, on_delete=models.SET_NULL)
     quantity = models.IntegerField(default=0)
