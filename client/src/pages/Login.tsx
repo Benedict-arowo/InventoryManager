@@ -29,7 +29,6 @@ const Login = () => {
         method: "POST",
         useServerUrl: true,
         body: details,
-        useAuth: false,
         returnResponse: true,
       },
     });

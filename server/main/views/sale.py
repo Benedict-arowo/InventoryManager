@@ -192,7 +192,7 @@ def edit_sale(request, id):
     # price_per_unit, quantity_sold = request['data'].values()
     # Item
 
-    InStock = models.Stock.objects.get(name=sale.name)
+    InStock = models.Stock.objects.get(name=sale.item.name)
     if new_quantity:
         # Adds back the previous quantity, and removes the new quantity that has been given
         if new_quantity > InStock.quantity + sale.quantity:
