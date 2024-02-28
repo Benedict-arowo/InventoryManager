@@ -50,13 +50,16 @@ const formatDate = (incoming_date: Date) => {
   );
 };
 
+const today = new Date();
+const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
 const Sales = () => {
   const [salesItems, setSalesItems] = useState<Sale[]>([]);
   const [search, setSearch] = useState<Search>({
     name: undefined,
     code: undefined,
   });
-  const [date, setDate] = useState<Date[] | null>(null);
+  const [date, setDate] = useState<Date[] | null>([oneWeekAgo, today]);
 
   const totalBodyTemplate = (item: Sale) => {
     return <p>{item.price * item.quantity}</p>;

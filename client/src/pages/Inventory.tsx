@@ -103,7 +103,6 @@ const Inventory = () => {
     // Removing the item from the local state after successfull deletion
     setInventoryItems((prev) =>
       prev.filter((item) => {
-        console.log(itemId === item.id);
         return item.id !== itemId;
       })
     );
@@ -114,6 +113,8 @@ const Inventory = () => {
       return item.name.toLowerCase().includes(search.name.toLowerCase());
     });
   };
+
+  console.log(inventoryItems);
 
   return (
     <main className="p-4 w-full relative">
@@ -215,7 +216,7 @@ const Inventory = () => {
           <Column
             body={(item) => (
               <p className="bg-slate-600 text-white w-fit px-2 py-1 rounded-md text-xs font-medium">
-                {item.category}
+                {item.category.name}
               </p>
             )}
             field="category"
