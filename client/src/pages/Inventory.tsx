@@ -1,15 +1,5 @@
 import { useEffect, useState } from "react";
 import { InventoryItems } from "../types";
-// import {
-// 	Autocomplete,
-// 	Backdrop,
-// 	Fab,
-// 	Fade,
-// 	Modal,
-// 	TextField,
-// 	Typography,
-// } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Tag } from "primereact/tag";
@@ -101,7 +91,6 @@ const Inventory = () => {
       url: `api/stock/${itemId}`,
       options: {
         method: "DELETE",
-        useAuth: true,
         useServerUrl: true,
         returnResponse: true,
       },
@@ -127,7 +116,25 @@ const Inventory = () => {
   };
 
   return (
-    <main className="p-4 w-full">
+    <main className="p-4 w-full relative">
+      <button
+        className="absolute z-10 bottom-3 right-3 cursor-pointer"
+        onClick={() => setOpenNewItemModal(() => true)}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-12 h-12 text-blue-400"
+        >
+          <path
+            fillRule="evenodd"
+            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V9Z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
+
       <header className="grid place-items-center w-full">
         <Dropdown
           value={search.name}
@@ -147,8 +154,6 @@ const Inventory = () => {
           placeholder="Search"
           className="w-full md:w-14rem max-w-[500px]"
         />
-
-        <button onClick={() => setOpenNewItemModal(() => true)}>Create</button>
       </header>
 
       <div className="h-[90vh] relative mt-6">
