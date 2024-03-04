@@ -13,6 +13,7 @@ def stock(request):
         items = models.Stock.objects.all()
 
         serializer = StockSerializer(items, many=True)
+
         return Response(
             {"success": True, "data": serializer.data}, status=status.HTTP_200_OK
         )

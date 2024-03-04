@@ -22,7 +22,7 @@ const UseFetch = async ({ url, options }: FetchParams) => {
       options.useServerUrl ? `${SERVER_URL}/${url}` : url,
       {
         method: options?.method || "GET",
-        // credentials: "omit",
+        // credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
@@ -31,6 +31,11 @@ const UseFetch = async ({ url, options }: FetchParams) => {
       }
     );
 
+    if (response.status === 204) {
+      if (options.returnResponse) return { data: {}, response };
+      else return {};
+    }
+    // If the response is not 204, parse the response body as JSON
     const data = await response.json();
 
     if (!response.ok && options.handleError) {
