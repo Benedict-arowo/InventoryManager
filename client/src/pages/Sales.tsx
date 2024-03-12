@@ -112,12 +112,20 @@ const Sales = () => {
         return (
           item.item.name.toLowerCase().includes(search.name.toLowerCase()) ||
           item.status.toLowerCase() === search.name.toLowerCase() ||
-          item.payment_method.toLowerCase() === search.name.toLowerCase() ||
+          (item.payment_method &&
+            item.payment_method.toLowerCase() === search.name.toLowerCase()) ||
           item.id.toString() == search.name
         );
       }
       return true;
     });
+  };
+
+  const getTotal = () => {
+    return salesItems.reduce((acc, item) => {
+      console.log(item);
+      return acc + item.price * item.quantity;
+    }, 0);
   };
 
   return (
@@ -148,7 +156,9 @@ const Sales = () => {
           }
           options={salesItems.map((item) => ({
             // Captializes the first letter of the item name since they're usually small case'd.
-            name: item.item.name[0].toUpperCase() + item.item.name.slice(1),
+            name:
+              item.item &&
+              item.item.name[0].toUpperCase() + item.item.name.slice(1),
             code: item.id,
           }))}
           optionLabel="name"
@@ -156,6 +166,7 @@ const Sales = () => {
           placeholder="Search"
           className="w-full md:w-14rem max-w-[500px]"
         />
+        <h1>Total: {getTotal()}</h1>
       </header>
 
       <section>
@@ -191,7 +202,8 @@ const Sales = () => {
         />
       </section>
 
-      <div className="h-[90vh] mt-6 overflow-auto">
+      {/* <div className="h-[90vh] mt-6 overflow-auto"> */}
+      <div className="h-[80vh] relative mt-6 overflow-auto">
         <DataTable
           value={getSalesItems()}
           stateStorage="session"

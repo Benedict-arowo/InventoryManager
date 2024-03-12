@@ -308,7 +308,8 @@ const Inventory = () => {
                 {item.category ? item.category.name : "NULL"}
               </p>
             )}
-            field="category"
+            sortable
+            field="category.name"
             header="Category"
           ></Column>
           <Column body={statusBodyTemplate} header="Status"></Column>
