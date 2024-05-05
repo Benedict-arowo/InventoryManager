@@ -25,6 +25,8 @@ class SaleSerializer(serializers.ModelSerializer):
 
 
 class ExpencesSerializer(serializers.ModelSerializer):
+    item = StockSerializer(required=False, allow_null=True)
+
     class Meta:
         model = Expence
         fields = "__all__"

@@ -17,83 +17,73 @@ from main.models import Stock, Category, Sale, User
 
 
 def import_data_from_csv(file_name, created_at_date):
-    con = sqlite3.connect("db.sqlite3")
-    cur = con.cursor()
-    res = cur.execute("SELECT name FROM main_stock")
-    itemsInStock = list(res.fetchall())
-    items = []
+    # con = sqlite3.connect("db.sqlite3")
+    # cur = con.cursor()
+    # res = cur.execute("SELECT name FROM main_stock")
+    itemsInStock = Stock.objects.all().values_list("name")
 
+    items = []
     for item in itemsInStock:
         items.append(item[0].lower())
 
     # Make sure items exist in the database. If not, create them.
     with open(file_name, newline="") as csvfile:
         reader = csv.DictReader(csvfile)
-        insertList = []
+        createList = []
+
+        start_datetime = timezone.make_aware(
+            timezone.datetime.combine(created_at_date, timezone.datetime.min.time())
+        )
+        end_datetime = timezone.make_aware(
+            timezone.datetime.combine(created_at_date, timezone.datetime.max.time())
+        )
+
+        Sale.objects.filter(created_at__range=(start_datetime, end_datetime)).delete()
+
         for row in reader:
-            if row["ID"] == "":
+            if row.get("ID") == "":
                 break
             if not row["Name"].lower() in items:
                 try:
                     price = float(row["Price Per Unit"].replace(",", ""))
                 except ValueError:
-                    print(row["Price Per Unit"])
-                    print(f'Could not parse price for {row["Name"]}')
+                    print(
+                        f'Could not parse price for {row["Name"]}, ${row["Price Per Unit"]}'
+                    )
                     sys.exit(1)
 
-                category, _ = Category.objects.get_or_create(name=row["Category"].capitalize())
-                insertList.append(
-                    Stock(
-                        name=row["Name"],
-                        category=category,
-                        quantity=0,
-                        price_per_unit=price,
-                        quantity_sold=0,
-                        low_stock_threshold=0,
-                        is_service=False,
-                        use_amount=True,
-                        use_quantity=False,
-                        created_at=created_at_date,
-                        updated_at=created_at_date,
-                    )
+                category, _ = Category.objects.get_or_create(
+                    name=row["Category"].capitalize()
                 )
+                # TODO: Implement a logger function
+                Stock.objects.create(
+                    name=row["Name"].lower(),
+                    category=category,
+                    quantity=0,
+                    price_per_unit=price,
+                    quantity_sold=0,
+                    low_stock_threshold=0,
+                    is_service=False,
+                    use_amount=True,
+                    use_quantity=False,
+                    created_at=created_at_date,
+                    updated_at=created_at_date,
+                )
+                items.append(row["Name"].lower())
                 print(f"{row['Name']} does not exist... Creating it on `main_stock`")
 
-        if len(insertList) != 0:
-            Stock.objects.bulk_create(insertList)
-
-        con.commit()
-
-    with open(file_name, newline="") as csvfile:
-        reader = csv.DictReader(csvfile)
-        createList = []
-
-        # Delete all records for the day first
-
-        start_datetime = timezone.make_aware(timezone.datetime.combine(created_at_date, timezone.datetime.min.time()))
-        end_datetime = timezone.make_aware(timezone.datetime.combine(created_at_date, timezone.datetime.max.time()))
-        
-        Sale.objects.filter(created_at__range=(start_datetime, end_datetime)).delete()
-
-        for row in reader:
-            if row["ID"] == "":
-                break
-            item, _ = Stock.objects.get_or_create(
-                name=row["Name"],
-                price_per_unit=float(row["Price Per Unit"].replace(",", "")),
-            )
-            
             # Add item to create item list
             createList.append(
                 Sale(
-                    item=item,
+                    item=Stock.objects.get(name=row["Name"].lower()),
                     quantity=float(row["Quantity"].replace(",", "")),
                     amount_paid=float(row["Total"].replace(",", "")),
                     status="Paid",
                     price=float(row["Price Per Unit"].replace(",", "")),
-                    total=float(row["Quantity"].replace(",", "")) * float(row["Price Per Unit"].replace(",", "")),
+                    total=float(row["Quantity"].replace(",", ""))
+                    * float(row["Price Per Unit"].replace(",", "")),
                     sold_by=User.objects.get(username="admin"),
-                    created_at=created_at_date
+                    created_at=created_at_date,
                 )
             )
             print(f"Creating {row['Name']} {row["Price Per Unit"]}")
@@ -101,9 +91,8 @@ def import_data_from_csv(file_name, created_at_date):
         if len(createList) != 0:
             Sale._meta.get_field("created_at").auto_now_add = False
             Sale.objects.bulk_create(createList)
-            Sale._meta.get_field('created_at').auto_now_add = True
-        
-    con.close()
+            Sale._meta.get_field("created_at").auto_now_add = True
+
 
 
 if __name__ == "__main__":
@@ -114,12 +103,12 @@ if __name__ == "__main__":
 
     for subdir, dirs, files in os.walk(csvFilesDir):
         for file in files:
-            if (file.endswith(".csv")):
+            if file.endswith(".csv"):
                 day, month, year = file.split("-")
                 year = year.split(".")[0]
                 file_path = os.path.join(csvFilesDir, file)
-                record_date = timezone.make_aware(datetime(int('20' + year), int(month), int(day), 0, 0, 0))
-                print(day, month, year)
+                record_date = timezone.make_aware(
+                    datetime(int("20" + year), int(month), int(day), 0, 0, 0)
+                )
+                print(year, month, day)
                 import_data_from_csv(file_path, record_date)
-
-
