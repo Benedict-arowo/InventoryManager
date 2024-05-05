@@ -1,91 +1,24 @@
-import { useEffect, useState } from "react";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { Tag } from "primereact/tag";
-import { Dropdown } from "primereact/dropdown";
-import { Calendar } from "primereact/calendar";
+import React, { useEffect, useState } from "react";
 import UseFetch from "../UseFetch";
-
-type Item = {
-  id: string;
-  created_at: Date;
-  updated_at: Date;
-  name: string;
-  quantity: number;
-  price_per_unit: number;
-  quantity_sold: number;
-  low_stock_threshold: number;
-  use_quantity: false;
-  use_amount: false;
-  is_service: false;
-  category: string;
-};
-
-type Sale = {
-  id: number;
-  created_at: Date;
-  updated_at: Date;
-  price: number;
-  quantity: number;
-  amount_paid: number;
-  status: string;
-  payment_method: string;
-  total: number;
-  change: number;
-  item: Item;
-  sold_by: number;
-};
-
-type Search = {
-  name: string | undefined;
-  code: string | undefined;
-};
-export const formatDate = (incoming_date: Date) => {
-  // YY-MM-DD format
-
-  if (!incoming_date) return;
-  const date = new Date(incoming_date);
-  return (
-    date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate()
-  );
-};
+import { formatDate } from "./Sales";
+import { Calendar } from "primereact/calendar";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { Dropdown } from "primereact/dropdown";
 
 const today = new Date();
 const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-const Sales = () => {
-  const [salesItems, setSalesItems] = useState<Sale[]>([]);
-  const [search, setSearch] = useState<Search>({
-    name: undefined,
-    code: undefined,
-  });
+const Purchases = () => {
   const [date, setDate] = useState<Date[] | null>([oneWeekAgo, today]);
+  const [expences, setExpences] = useState([]);
+  const [search, setSearch] = useState({ name: undefined, code: undefined });
 
-  const totalBodyTemplate = (item: Sale) => {
-    return <p>{item.price * item.quantity}</p>;
-  };
-
-  const statusBodyTemplate = (item: Sale) => {
-    const getSeverity = (item: Sale) => {
-      if (item.status.toUpperCase() === "PAID") return "success";
-      else if (item.status.toUpperCase() === "PENDING") return "warning";
-      else return "danger";
-    };
-
-    return (
-      <Tag
-        className="text-white"
-        value={item.status.toUpperCase()}
-        severity={getSeverity(item)}
-      ></Tag>
-    );
-  };
-
-  const fetchSales = async (date: Date[]) => {
+  const fetchExpences = async (date: Date[]) => {
     if (!date) date = [new Date(), new Date()];
 
     const { data, response } = await UseFetch({
-      url: `api/sales?date=${formatDate(date[0])}${
+      url: `api/expences?date=${formatDate(date[0])}${
         formatDate(date[1]) !== undefined
           ? "&end-date=" + formatDate(date[1])
           : ""
@@ -97,23 +30,21 @@ const Sales = () => {
       },
     });
 
-    if (!response.ok) throw new Error("Error communicating with server.");
+    if (!response.ok)
+      throw new Error("Error trying to communicate with server.");
 
-    setSalesItems(data.data);
+    setExpences(data.data);
   };
 
   useEffect(() => {
-    (async () => await fetchSales(date ? date : [new Date()]))();
+    (async () => await fetchExpences(date ? date : [new Date()]))();
   }, [date]);
 
-  const getSalesItems = () => {
-    return salesItems.filter((item) => {
+  const getExpenceItems = () => {
+    return expences.filter((item) => {
       if (search.name) {
         return (
           item.item.name.toLowerCase().includes(search.name.toLowerCase()) ||
-          item.status.toLowerCase() === search.name.toLowerCase() ||
-          (item.payment_method &&
-            item.payment_method.toLowerCase() === search.name.toLowerCase()) ||
           item.id.toString() == search.name
         );
       }
@@ -122,32 +53,16 @@ const Sales = () => {
   };
 
   const getTotal = () => {
-    const item_price_total = salesItems.reduce((acc, item) => {
-      return acc + item.price * item.quantity;
-    }, 0);
-    const amount_paid_total = salesItems.reduce((acc, item) => {
-      return acc + item.amount_paid;
+    const total = expences.reduce((acc, item) => {
+      return acc + item.price_per_unit * item.quantity;
     }, 0);
 
-    return amount_paid_total;
+    return total;
   };
 
   return (
-    <div className="w-full relative p-4">
-      <button className="absolute z-10 bottom-3 right-3 cursor-pointer">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="w-12 h-12 text-blue-400"
-        >
-          <path
-            fillRule="evenodd"
-            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V9Z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
+    <div className="w-full">
+      <p>Purchases {expences.length}</p>
 
       <header className="grid place-items-center w-full">
         <Dropdown
@@ -158,7 +73,7 @@ const Sales = () => {
               name: e.value.name ? e.value.name : e.value,
             }))
           }
-          options={salesItems.map((item) => ({
+          options={expences.map((item) => ({
             // Captializes the first letter of the item name since they're usually small case'd.
             name:
               item.item &&
@@ -172,7 +87,7 @@ const Sales = () => {
         />
       </header>
 
-      <section className="flex flex-row justify-between">
+      <section className="flex flex-row justify-between px-8">
         <Calendar
           value={date}
           onChange={(e) => {
@@ -203,13 +118,12 @@ const Sales = () => {
           readOnlyInput
           showIcon
         />
-        <h1>Total: {getTotal()}</h1>
+        <p>{getTotal()}</p>
       </section>
 
-      {/* <div className="h-[90vh] mt-6 overflow-auto"> */}
       <div className="h-[80vh] relative mt-6 overflow-auto">
         <DataTable
-          value={getSalesItems()}
+          value={getExpenceItems()}
           stateStorage="session"
           // alwaysShowPaginator={false}
           stripedRows
@@ -223,7 +137,15 @@ const Sales = () => {
           currentPageReportTemplate="{first} to {last} of {totalRecords}"
           rowsPerPageOptions={[10, 25, 50]}
           className="h-full"
-          tableStyle={{}}
+          resizableColumns={true}
+          onRowClick={(e) => {
+            const target = e.originalEvent.target.parentElement;
+            if (target.classList.contains("bg-red-300")) {
+              target.classList.remove("bg-red-300");
+            } else {
+              target.classList.add("bg-red-300");
+            }
+          }}
         >
           <Column
             field="id"
@@ -232,21 +154,23 @@ const Sales = () => {
           ></Column>
           <Column field="item.name" header="Name" sortable></Column>
           {/* <Column field="category" header="Category"></Column> */}
-          <Column field="quantity" header="Quantity"></Column>
-          <Column field="price" header="Price"></Column>
-          <Column field="amount_paid" header="Amount Paid"></Column>
-          <Column body={totalBodyTemplate} header="Total"></Column>
-          <Column body={statusBodyTemplate} header="Status"></Column>
+          <Column sortable field="quantity" header="Quantity"></Column>
+          <Column sortable field="price_per_unit" header="Price"></Column>
+          <Column sortable field="total" header="Total"></Column>
+          {/* <Column body={totalBodyTemplate} header="Total"></Column> */}
+          {/* <Column body={statusBodyTemplate} header="Status"></Column> */}
           {/* <Column body={paymentBodyTemplate} header="Method"></Column> */}
           <Column
             body={(item) => <p>{formatDate(item.created_at)}</p>}
             field="created_at"
             header="Created"
+            sortable
           ></Column>
         </DataTable>
+        s
       </div>
     </div>
   );
 };
 
-export default Sales;
+export default Purchases;

@@ -205,7 +205,7 @@ const Inventory = () => {
   };
 
   return (
-    <main className="p-4 w-full relative">
+    <main className="sm:p-4 px-2 py-4 w-full relative">
       <Toast ref={toast} />
       <button
         className="absolute z-10 bottom-3 right-3 cursor-pointer"
@@ -246,7 +246,7 @@ const Inventory = () => {
         />
       </header>
 
-      <div className="h-[90vh] relative mt-6 overflow-auto">
+      <div className="h-full w-full mt-4 overflow-auto max-h-[90%]">
         <DataTable
           value={getInventoryItems()}
           stateStorage="session"
@@ -261,13 +261,18 @@ const Inventory = () => {
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           currentPageReportTemplate="{first} to {last} of {totalRecords}"
           rowsPerPageOptions={[10, 25, 50]}
-          className="h-full px-4"
+          className="h-full sm:px-4"
           tableStyle={{}}
         >
           <Column
-            body={(item) => <p className="capitalize">{item.name}</p>}
+            body={(item) => (
+              <a href={`/summary/${item.name}`} className="capitalize">
+                {item.name}
+              </a>
+            )}
             field="name"
             header="Name"
+            sortable
           ></Column>
           <Column
             body={(item) => (

@@ -6,18 +6,22 @@ import Sidebar from "./components/Sidebar";
 import Inventory from "./pages/Inventory";
 import Sales from "./pages/Sales";
 import Login from "./pages/Login";
+import Summary from "./pages/Summary";
+import Purchases from "./pages/Purchases";
 
 const App = () => {
   return (
-    <div className="flex flex-row max-h-screen h-full w-full overflow-hidden">
+    <div className="flex flex-row max-h-screen overflow-hidden h-full w-full">
       <Routes>
         <Route element={<Login />} path="/login" />
+        <Route element={<Summary />} path="/summary/:id" />
         <Route path="/" element={<Sidebar />}>
-          <Route element={<Home />} path="/dashboard" />
+          <Route element={<Home />} path="" />
           <Route element={<ExpencesLocal />} path="/expences-local" />
           <Route element={<SalesLocal />} path="/sales-local" />
           <Route element={<Inventory />} path="/inventory" />
           <Route element={<Sales />} path="/sales" />
+          <Route element={<Purchases />} path="/purchases" />
         </Route>
       </Routes>
     </div>

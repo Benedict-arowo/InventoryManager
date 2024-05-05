@@ -41,7 +41,7 @@ const Login = () => {
     setIsLoading(false);
     localStorage.setItem("access-token", JSON.stringify(data.access));
     localStorage.setItem("refresh-token", JSON.stringify(data.refresh));
-    Navigate("/dashboard");
+    Navigate("/");
   };
 
   return (
