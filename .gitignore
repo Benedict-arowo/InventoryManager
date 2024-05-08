@@ -1,4 +1,3 @@
 /server/venv
 /server/db.sqlite3
 .vscode/settings.json
-/csv_files
