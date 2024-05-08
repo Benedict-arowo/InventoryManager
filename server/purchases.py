@@ -113,4 +113,5 @@ if __name__ == "__main__":
                 month, year = folder_name.split("-")
                 year = int(year)
                 month = int(month)
+            print(file, year, month)
             create_items(os.path.join(filesDir, file), year, month)

@@ -105,4 +105,5 @@ if __name__ == "__main__":
     for subdir, dirs, files in os.walk(filesDir):
         for file in files:
             print(os.path.join(filesDir, file))
+            print(file, year, month)
             create_items(os.path.join(filesDir, file), year, month)
