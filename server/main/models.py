@@ -54,28 +54,33 @@ class Sale(TimeStampMixin):
         formatted_created_at = timezone.localtime(self.created_at).strftime(
             "%a %b %d %H:%M:%S %Y"
         )
-        return (
-            f"{self.item.name} - {self.total} @ {formatted_created_at} - {self.status}"
-        )
+        if self.item:
+            return f"{self.item.name} - {self.total} @ {formatted_created_at} - {self.status}"
+        else:
+            return f"{self.total} @ {formatted_created_at} - {self.status}"
 
 
 class Expence(TimeStampMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
+    # TODO: remove name field.
     name = models.CharField(max_length=255)
-    # item = models.ForeignKey("Stock", related_name="expences_stock", on_delete=models.SET_NULL, null=True)
+    item = models.ForeignKey(
+        "Stock", related_name="expences_stock", on_delete=models.SET_NULL, null=True
+    )
     quantity = models.IntegerField(default=1)
     price = models.IntegerField(default=1)
     price_per_unit = models.IntegerField(default=0)
     selling_price_per_unit = models.IntegerField(default=0)
     add_to_stock = models.BooleanField(default=False)
+    total = models.IntegerField(default=0, editable=False)
 
     def __str__(self):
-        return f"{self.name} - {self.quantity}"
+        return f"{self.item.name} - {self.quantity}"
 
 
 class Stock(TimeStampMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4(), editable=False)
-    name = models.CharField(max_length=255)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
     category = models.ForeignKey("Category", null=True, on_delete=models.SET_NULL)
     quantity = models.IntegerField(default=0)
     price_per_unit = models.IntegerField(default=0)
@@ -85,8 +90,8 @@ class Stock(TimeStampMixin):
     use_amount = models.BooleanField(default=False)
     is_service = models.BooleanField(default=False)
 
-    class Meta:
-        unique_together = [["name", "price_per_unit"]]
+    # class Meta:
+    # unique_together = [["name", "price_per_unit"]]
 
     def __str__(self):
         return f"{self.name} @ {self.price_per_unit} - {self.quantity} left"
