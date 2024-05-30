@@ -206,6 +206,12 @@ const MonthlySummary = () => {
               sortable
             ></Column>
             <Column
+              header="Amount Remaining"
+              body={(item) => {
+                return item[1].quantityBought - item[1].quantitySold;
+              }}
+            ></Column>
+            <Column
               field="1.quantitySold"
               header="Quantity Sold"
               sortable

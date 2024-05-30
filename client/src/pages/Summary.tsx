@@ -84,6 +84,16 @@ const Summary = () => {
             Total Sold: {sales.reduce((acc, item) => acc + item.amount_paid, 0)}
           </h3>
           <h3>Total Bought: {info.totalBought}</h3>
+
+          <h3 className="mt-2">
+            Total Quantity Bought:{" "}
+            {expences.reduce((acc, item) => acc + item.quantity, 0)}
+          </h3>
+          <h3>
+            Total Quantity Sold:{" "}
+            {sales.reduce((acc, item) => acc + item.quantity, 0)}
+          </h3>
+
           <h4>Profit: {info.totalSold - info.totalBought}</h4>
 
           <div className="">

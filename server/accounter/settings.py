@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-*^cc1z$#-^oxgd&mv@h(k)fj6wgr0j5jn72c!q1&4i=w^&683s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["192.168.0.167", "192.168.0.126"]
+ALLOWED_HOSTS = ["192.168.0.167", "192.168.0.126", "192.168.112.1"]
 
 # REST_FRAMEWORK = {
 #     # Use Django's standard `django.contrib.auth` permissions,
@@ -164,4 +164,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://192.168.0.167:5173",
     "http://192.168.0.126:5173",
+    "http://192.168.112.1:5173",
 ]
